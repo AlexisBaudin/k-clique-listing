@@ -278,7 +278,7 @@ end
 
 function mkheap(g::sparse)
     heap = construct(g.n)
-    for i = 1:g.n
+    @inbounds for i = 1:g.n
         insert!(heap, keyvalue(i, g.d0[i]))
     end
     return heap
@@ -296,13 +296,13 @@ function kcore!(g::sparse, kmax::UInt)
     g.map = Vector{UInt}(undef, g.n)
     for i = 1:g.n
         kv::keyvalue = popmin!(heap)
-        @inbounds if (kv.value > c)
+        if (kv.value > c)
             c = kv.value
         end
         @inbounds if (c < k) # remove node with core value less than kmax-1
             g.rank[kv.key] = 0 # pas de rang 0 donc ok
             n -= 1
-        else
+        @inbounds else
             r += 1
             g.map[n-r+1] = kv.key # décalage Julia
             g.rank[kv.key] = n - r + 1 # décalage Julia
