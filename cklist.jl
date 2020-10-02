@@ -26,16 +26,18 @@ function qsort!(a, lo, hi)
     end
 end
 
+# heap data structure :
+
 mutable struct keyvalue
     key::UInt
     value::UInt
 end
 
 mutable struct bheap
-    n_max::UInt
-    n::UInt
-    pt::Vector{UInt}
-    kv::Vector{keyvalue}
+    n_max::UInt # max number of nodes
+    n::UInt # number of nodes
+    pt::Vector{UInt} # pointers to nodes
+    kv::Vector{keyvalue} # nodes
     function bheap()
         bh = new()
         return bh
@@ -121,6 +123,8 @@ function popmin!(heap::bheap)
     return min
 end
 
+# graph data structure:
+
 mutable struct edge
     s::UInt
     t::UInt
@@ -193,6 +197,7 @@ function get_hms(dur::Float64)
     return "$(h)h$(m)m$(s)s = $(sec)s"
 end
 
+# read the edgelist from file
 function readedgelist(edgelist::String)
     g = sparse()
     g.n = 0
@@ -202,12 +207,6 @@ function readedgelist(edgelist::String)
     eat_comments(file)
     bytes = read(file)
     close(file)
-
-    # TODO : on peut être plus précis avec HINT et gagner de la mémoire
-    HINT = length(bytes) #div(length(bytes), 6) + 1_000_000
-
-    # println(HINT)
-    # g.edges = Vector{edge}(undef, HINT)
 
     g.edges = Vector{edge}()
 
@@ -232,12 +231,9 @@ function readedgelist(edgelist::String)
                 if fst
                     s = val
                 else
-                    # g.edges[g.e] = edge(s, val)
                     push!(g.edges, edge(s, val))
                     g.e += 1
                 end
-                # numbers[val_idx] = val
-                # val_idx += 1
                 val = 0
                 prev_was_digit = false
                 fst = !fst
@@ -276,6 +272,7 @@ function mkgraph!(g::sparse)
     end
 end
 
+# Building the heap structure with (jey,value)=(node,degree) for each node
 function mkheap(g::sparse)
     heap = construct(g.n)
     @inbounds for i = 1:g.n
@@ -302,7 +299,7 @@ function kcore!(g::sparse, kmax::UInt)
         @inbounds if (c < k) # remove node with core value less than kmax-1
             g.rank[kv.key] = 0 # pas de rang 0 donc ok
             n -= 1
-        @inbounds else
+        else
             r += 1
             g.map[n-r+1] = kv.key # décalage Julia
             g.rank[kv.key] = n - r + 1 # décalage Julia
@@ -344,6 +341,7 @@ function relabelnodes!(g::sparse)
     resize!(g.edges, g.e2)
 end
 
+# Building the special graph structure
 function mkspecial!(g::sparse)
     g.d = zeros(UInt, g.n2)
     @inbounds for i = 1:g.e2
@@ -449,6 +447,7 @@ function merging2(
     return s3 - i3 # on renvoit la TAILLE, pas l'indice
 end
 
+# the recursion to compute all possible intersections
 function recursion!(
     nck::Vector{UInt},
     kmax::UInt,
@@ -497,6 +496,7 @@ function recursion!(
     end
 end
 
+# one pass over all k-cliques
 function onepass(g::sparse, kmax::UInt)
     nck::Vector{UInt} = zeros(UInt, 1)
 
